@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Yard Designer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #EEF2F6;
+    --bg-grid: #D7E1EC;
+    --surface: #FFFFFF;
+    --surface-2: #F5F8FB;
+    --border: #C7D2DE;
+    --text: #16233A;
+    --text-dim: #5B6B84;
+    --accent: #3452B4;
+    --accent-contrast: #FFFFFF;
+    --warn: #B5760B;
+    --danger: #C23B32;
+    --ok: #1F8A5F;
+    --node-induction: #2F63D0;
+    --node-feeder: #0E8F86;
+    --node-backbone: #0B6E68;
+    --node-sorter: #7C5CD1;
+    --node-diverter: #C98A1B;
+    --node-chute: #2E9F5D;
+    --shadow: 0 1px 2px rgba(22,35,58,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0D1117;
+      --bg-grid: #1B222B;
+      --surface: #151B23;
+      --surface-2: #1A222C;
+      --border: #2A3441;
+      --text: #E4E9EF;
+      --text-dim: #8B98AA;
+      --accent: #6C8CFF;
+      --accent-contrast: #0D1117;
+      --warn: #E8A33D;
+      --danger: #E2574C;
+      --ok: #45C08A;
+      --node-induction: #5B8DEF;
+      --node-feeder: #34C7BC;
+      --node-backbone: #2A9791;
+      --node-sorter: #A98BF0;
+      --node-diverter: #E8A33D;
+      --node-chute: #52C97C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0D1117;
+    --bg-grid: #1B222B;
+    --surface: #151B23;
+    --surface-2: #1A222C;
+    --border: #2A3441;
+    --text: #E4E9EF;
+    --text-dim: #8B98AA;
+    --accent: #6C8CFF;
+    --accent-contrast: #0D1117;
+    --warn: #E8A33D;
+    --danger: #E2574C;
+    --ok: #45C08A;
+    --node-induction: #5B8DEF;
+    --node-feeder: #34C7BC;
+    --node-backbone: #2A9791;
+    --node-sorter: #A98BF0;
+    --node-diverter: #E8A33D;
+    --node-chute: #52C97C;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  #root { height: 100%; display: flex; flex-direction: column; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  input, select, textarea, button { font-family: inherit; font-size: 13px; }
+
+  /* ---------- header ---------- */
+  .app-header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex: 0 0 auto;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand-title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .brand-sub { color: var(--text-dim); font-size: 12px; }
+  .header-spacer { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+  .btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+  .btn.subtle { background: transparent; }
+  .btn.icon { padding: 7px 9px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---------- layout ---------- */
+  .app-body { flex: 1; display: flex; min-height: 0; position: relative; }
+  .rail {
+    flex: 0 0 auto;
+    background: var(--surface);
+    border-color: var(--border);
+    overflow-y: auto;
+  }
+  .rail.left { width: 216px; border-right: 1px solid var(--border); }
+  .rail.right { width: 320px; border-left: 1px solid var(--border); }
+  .rail-section { padding: 14px; border-bottom: 1px solid var(--border); }
+  .rail-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin: 0 0 10px; font-weight: 600; }
+
+  .palette-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    margin-bottom: 8px;
+    cursor: grab;
+    user-select: none;
+  }
+  .palette-item:active { cursor: grabbing; }
+  .palette-stage {
+    width: 18px; height: 18px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff;
+    flex: 0 0 auto;
+  }
+  .palette-label { font-size: 13px; font-weight: 500; }
+  .palette-hint { font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
+
+  .canvas-wrap { flex: 1; position: relative; overflow: hidden; display: flex; }
+  .canvas-viewport {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background-image: radial-gradient(var(--bg-grid) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+    background-color: var(--bg);
+  }
+  .canvas-world {
+    position: relative;
+  }
+  .canvas-world.connecting { cursor: crosshair; }
+
+  .node-card {
+    position: absolute;
+    border-radius: 8px;
+    border: 1.5px solid var(--card-color, var(--border));
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: visible;
+  }
+  .node-card.selected { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .node-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px;
+    cursor: grab;
+    border-radius: 7px 7px 0 0;
+  }
+  .node-head:active { cursor: grabbing; }
+  .node-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-color); flex: 0 0 auto; }
+  .node-id { font-size: 11px; font-weight: 600; }
+  .node-label { font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .node-worker-tag { font-size: 10px; color: var(--text-dim); padding: 0 10px 8px; margin-top: -4px; }
+
+  .port {
+    position: absolute;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+  }
+  .port:hover { transform: translate(-50%, -50%) scale(1.25); }
+  .port.out { background: var(--card-color); }
+  .port.in { background: var(--surface); border-color: var(--card-color); border-width: 2.5px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .port.eligible { animation: portPulse 1.1s ease-in-out infinite; }
+  }
+  @keyframes portPulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+
+  .sorter-body { padding: 6px 0 8px; }
+  .diverter-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px 5px 14px;
+    margin: 0 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+  }
+  .diverter-row:hover { background: var(--surface-2); }
+  .diverter-row.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .diverter-swatch { width: 7px; height: 7px; border-radius: 50%; background: var(--node-diverter); flex: 0 0 auto; }
+  .diverter-id { font-size: 11px; flex: 1; }
+  .diverter-del {
+    border: none; background: transparent; color: var(--text-dim);
+    font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+  }
+  .diverter-del:hover { color: var(--danger); background: var(--surface-2); }
+  .add-diverter-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px 5px 14px; margin: 2px 8px 0;
+    font-size: 11px; color: var(--accent); border-radius: 5px;
+    background: transparent; border: none; width: calc(100% - 16px); text-align: left;
+  }
+  .add-diverter-row:hover { background: var(--surface-2); }
+
+  svg.edge-layer { position: absolute; inset: 0; overflow: visible; }
+  .edge-path { fill: none; stroke-width: 2; }
+  .edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+  .edge-path.selected { stroke-width: 3; }
+  .edge-temp { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 4; }
+
+  /* ---------- inspector ---------- */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-dim);
+    font-size: 12.5px; font-weight: 600; border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .field input[type=text], .field input[type=number], .field select {
+    width: 100%; padding: 7px 8px; border: 1px solid var(--border);
+    border-radius: 5px; background: var(--surface); color: var(--text);
+  }
+  .field-row { display: flex; gap: 8px; }
+  .field-row > .field { flex: 1; }
+  .radio-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .badge {
+    display: inline-block; padding: 2px 7px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 600; color: #fff;
+  }
+  .empty-note { color: var(--text-dim); font-size: 12.5px; line-height: 1.6; padding: 14px; }
+  .assign-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .assign-table th { text-align: left; color: var(--text-dim); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+  .assign-table td { padding: 5px 4px; border-bottom: 1px solid var(--surface-2); }
+  .assign-table select { width: 100%; padding: 4px; font-size: 12px; }
+  .summary-line { font-size: 12.5px; line-height: 1.6; padding: 10px 12px; background: var(--surface-2); border-radius: 6px; margin-bottom: 12px; }
+  .warn-banner {
+    font-size: 12px; padding: 8px 10px; border-radius: 6px; margin-bottom: 12px;
+    background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); line-height: 1.5;
+  }
+
+  /* ---------- center column: canvas + ask panel ---------- */
+  .center-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .center-col .canvas-wrap { min-height: 0; }
+  .ask-panel {
+    flex: 0 0 auto; max-height: 45%; overflow-y: auto;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px 16px;
+  }
+  .ask-title { font-size: 12px; font-weight: 600; color: var(--text-dim); margin: 0 0 8px; }
+  .ask-row { display: flex; gap: 8px; align-items: flex-start; }
+  .ask-row textarea {
+    flex: 1; min-height: 56px; resize: vertical; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--text); line-height: 1.45;
+  }
+  .ask-answer {
+    margin-top: 10px; padding: 10px 12px; border-radius: 6px;
+    background: var(--surface-2); font-size: 13px; line-height: 1.55;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .ask-answer.error { color: var(--danger); }
+  .ask-answer.pending { color: var(--text-dim); }
+  .port-field { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-dim); }
+  .port-field input {
+    width: 64px; padding: 6px 6px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--text);
+  }
+  .field input.invalid, .assign-table input.invalid { border-color: var(--danger); }
+  .assign-table input {
+    width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--surface); color: var(--text); font-size: 12px;
+  }
+  .field-hint { font-size: 11px; color: var(--text-dim); line-height: 1.4; margin: 0 0 10px; }
+
+  /* ---------- footer / status ---------- */
+  .status-bar {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 16px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px; color: var(--text-dim);
+  }
+  .status-count { display: flex; align-items: center; gap: 5px; }
+  .status-spacer { flex: 1; }
+  .issue-chip { border: none; background: transparent; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 5px; }
+  .issue-chip.err { color: var(--danger); }
+  .issue-chip.warn { color: var(--warn); }
+  .issue-chip.ok { color: var(--ok); }
+
+  .issues-panel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    max-height: 220px; overflow-y: auto;
+    background: var(--surface); border-top: 1px solid var(--border);
+    box-shadow: 0 -6px 16px rgba(0,0,0,0.12);
+  }
+  .issue-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px; font-size: 12.5px; border-bottom: 1px solid var(--surface-2);
+  }
+  .issue-row:hover { background: var(--surface-2); cursor: pointer; }
+  .issue-icon { flex: 0 0 auto; font-weight: 700; }
+  .issue-icon.error { color: var(--danger); }
+  .issue-icon.warning { color: var(--warn); }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 54px; transform: translateX(-50%);
+    background: var(--text); color: var(--bg);
+    padding: 9px 16px; border-radius: 7px; font-size: 13px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    z-index: 50; max-width: min(90vw, 420px); text-align: center;
+  }
+  .toast.error { background: var(--danger); color: #fff; }
+  .toast.ok { background: var(--ok); color: #fff; }
+
+  .file-input { display: none; }
+
+  /* ---------- responsive ---------- */
+  .mobile-toggle { display: none; }
+  @media (max-width: 900px) {
+    .mobile-toggle { display: inline-flex; }
+    .rail.left, .rail.right {
+      position: absolute; top: 0; bottom: 0; z-index: 10;
+      box-shadow: 0 0 24px rgba(0,0,0,0.25);
+    }
+    .rail.left { left: 0; transform: translateX(-100%); transition: transform 0.18s ease; }
+    .rail.left.open { transform: translateX(0); }
+    .rail.right { right: 0; transform: translateX(100%); transition: transform 0.18s ease; }
+    .rail.right.open { transform: translateX(0); }
+    .brand-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var h = React.createElement;
+  var useState = React.useState, useEffect = React.useEffect, useMemo = React.useMemo,
+      useRef = React.useRef, useCallback = React.useCallback;
+
+  /* ============================================================
+     CONSTANTS + PURE LOGIC (mirrors logic.js, unit-tested there)
+     ============================================================ */
+  var NODE_TYPES = {
+    INDUCTION: { label: "Induction Station", prefix: "IS", stage: 1, next: "FEEDER", colorVar: "--node-induction" },
+    FEEDER: { label: "Feeder Conveyor", prefix: "FC", stage: 2, next: "BACKBONE", colorVar: "--node-feeder" },
+    BACKBONE: { label: "Backbone Conveyor", prefix: "BB", stage: 3, next: "SORTER", colorVar: "--node-backbone" },
+    SORTER: { label: "Sorter", prefix: "SRT", stage: 4, next: null, colorVar: "--node-sorter" },
+    DIVERTER: { label: "Diverter", prefix: "DV", stage: 5, next: "CHUTE", colorVar: "--node-diverter" },
+    CHUTE: { label: "Chute", prefix: "CH", stage: 6, next: null, colorVar: "--node-chute" }
+  };
+  var PALETTE_TYPES = ["INDUCTION", "FEEDER", "BACKBONE", "SORTER", "CHUTE"];
+
+  var STD_W = 168, STD_H = 64, SORTER_W = 236, HEADER_H = 44, CHIP_H = 30,
+      PAD_TOP = 6, PAD_BOTTOM = 8, ADD_ROW_H = 28;
+  var WORLD_W = 2600, WORLD_H = 1500;
+
+  function nextIdFromNodes(type, nodes) {
+    var prefix = NODE_TYPES[type].prefix;
+    var max = 0;
+    Object.keys(nodes).forEach(function (k) {
+      if (k.indexOf(prefix) === 0) {
+        var n = parseInt(k.slice(prefix.length), 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+    });
+    return prefix + String(max + 1).padStart(3, "0");
+  }
+
+  function canConnect(nodesById, fromId, toId) {
+    if (fromId === toId) return { ok: false, reason: "Can't connect a node to itself." };
+    var from = nodesById[fromId], to = nodesById[toId];
+    if (!from || !to) return { ok: false, reason: "Unknown node." };
+    var expected = NODE_TYPES[from.type].next;
+    if (!expected) return { ok: false, reason: NODE_TYPES[from.type].label + " has no outgoing connections." };
+    if (to.type !== expected) {
+      return { ok: false, reason: NODE_TYPES[from.type].label + " can only connect to " + NODE_TYPES[expected].label + "." };
+    }
+    return { ok: true };
+  }
+
+  function addEdge(edges, fromId, toId) {
+    var id = fromId + "->" + toId;
+    if (edges.some(function (e) { return e.id === id; })) return edges;
+    return edges.concat([{ id: id, from: fromId, to: toId }]);
+  }
+
+  function removeNode(nodes, edges, id) {
+    var toRemove = { };
+    toRemove[id] = true;
+    if (nodes[id] && nodes[id].type === "SORTER") {
+      Object.keys(nodes).forEach(function (k) {
+        if (nodes[k].parentId === id) toRemove[k] = true;
+      });
+    }
+    var newNodes = {};
+    Object.keys(nodes).forEach(function (k) { if (!toRemove[k]) newNodes[k] = nodes[k]; });
+    var newEdges = edges.filter(function (e) { return !toRemove[e.from] && !toRemove[e.to]; });
+    return { nodes: newNodes, edges: newEdges };
+  }
+
+  function validateGraph(nodes, edges) {
+    var issues = [];
+    var nodeList = Object.keys(nodes).map(function (k) { return nodes[k]; });
+    var outCount = {}, inCount = {};
+    edges.forEach(function (e) {
+      outCount[e.from] = (outCount[e.from] || 0) + 1;
+      inCount[e.to] = (inCount[e.to] || 0) + 1;
+    });
+    nodeList.forEach(function (n) {
+      var t = n.type;
+      if (t === "INDUCTION" && !(outCount[n.id] > 0)) {
+        issues.push({ level: "warning", nodeId: n.id, message: n.id + " (induction station) doesn't feed any conveyor yet." });
+      }
+      if (t === "FEEDER") {
+        if (!(inCount[n.id] > 0)) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (feeder) has no induction station feeding it." });
+        if (!(outCount[n.id] > 0)) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (feeder) doesn't feed a backbone conveyor yet." });
+      }
+      if (t === "BACKBONE") {
+        if (!(inCount[n.id] > 0)) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (backbone) has no feeder conveyor connected." });
+        if (!(outCount[n.id] > 0)) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (backbone) doesn't feed a sorter yet." });
+      }
+      if (t === "SORTER") {
+        if (!(inCount[n.id] > 0)) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (sorter) has no backbone conveyor connected." });
+        var diverters = nodeList.filter(function (d) { return d.parentId === n.id; });
+        if (diverters.length === 0) issues.push({ level: "warning", nodeId: n.id, message: n.id + " (sorter) has no diverters yet." });
+      }
+      if (t === "DIVERTER") {
+        if (!(outCount[n.id] > 0)) issues.push({ level: "error", nodeId: n.id, message: n.id + " (diverter) isn't connected to a chute." });
+        if (outCount[n.id] > 1) issues.push({ level: "error", nodeId: n.id, message: n.id + " (diverter) is connected to more than one chute." });
+      }
+      if (t === "CHUTE") {
+        if (!(inCount[n.id] > 0)) issues.push({ level: "error", nodeId: n.id, message: n.id + " (chute) has no diverter feeding it." });
+        if (inCount[n.id] > 1) issues.push({ level: "error", nodeId: n.id, message: n.id + " (chute) is fed by more than one diverter." });
+      }
+    });
+    return issues;
+  }
+
+  /* ============================================================
+     API ENDPOINTS, RULES, AND PAYLOAD HELPERS
+     ============================================================ */
+  var API_PATH_DESIGN = "/api/yard-desing";   // spelled as specified; change here if the server uses "yard-design"
+  var API_PATH_QUESTION = "/api/question";
+
+  function zoneOf(node) { return node && node.zone ? String(node.zone).trim() : ""; }
+  function validCount(v) { return typeof v === "number" && isFinite(v) && v >= 1 && Math.floor(v) === v; }
+  function validCapacity(v) { return typeof v === "number" && isFinite(v) && v > 0; }
+  function toCount(v) { return typeof v === "number" && isFinite(v) && v > 0 ? Math.floor(v) : 0; }
+
+  // Working copy of the worker settings. It may keep a draft for each mode so
+  // switching tabs doesn't lose typing, but it is NEVER what gets exported.
+  function normalizeWorkers(raw) {
+    raw = raw || {};
+    var mode = raw.mode === "manual" ? "zone" : raw.mode;
+    if (mode !== "split" && mode !== "zone") mode = "total";
+    var perZone = {};
+    if (raw.perZone && typeof raw.perZone === "object") {
+      Object.keys(raw.perZone).forEach(function (z) {
+        var key = String(z).trim(), src = raw.perZone[z];
+        if (!key || !src || typeof src !== "object") return;
+        var entry = {};
+        ["inductionCount", "chuteCount"].forEach(function (f) {
+          if (typeof src[f] === "number" && isFinite(src[f])) entry[f] = src[f];
+        });
+        perZone[key] = entry;
+      });
+    }
+    return {
+      mode: mode, total: toCount(raw.total),
+      inductionCount: toCount(raw.inductionCount), chuteCount: toCount(raw.chuteCount),
+      perZone: perZone
+    };
+  }
+
+  // Strict, per-mode shape used for export / register:
+  //   total -> { mode, total }
+  //   split -> { mode, inductionCount, chuteCount }
+  //   zone  -> { mode, perZone }   (perZone[zone] holds only the role(s) present in that zone)
+  function cleanWorkers(workers, nodes) {
+    if (workers.mode === "total") return { mode: "total", total: toCount(workers.total) };
+    if (workers.mode === "split") {
+      return { mode: "split", inductionCount: toCount(workers.inductionCount), chuteCount: toCount(workers.chuteCount) };
+    }
+    var perZone = {}, src = workers.perZone || {};
+    Object.keys(nodes).forEach(function (id) {
+      var n = nodes[id], z = zoneOf(n);
+      if (!z || (n.type !== "INDUCTION" && n.type !== "CHUTE")) return;
+      var field = n.type === "INDUCTION" ? "inductionCount" : "chuteCount";
+      if (!perZone[z]) perZone[z] = {};
+      perZone[z][field] = toCount((src[z] || {})[field]);
+    });
+    return { mode: "zone", perZone: perZone };
+  }
+
+  // Rules that go beyond graph wiring: chute capacity, zone exclusivity, zone-mode completeness.
+  function validateRules(nodes, workers) {
+    var issues = [];
+    var list = Object.keys(nodes).map(function (k) { return nodes[k]; });
+    var inductions = list.filter(function (n) { return n.type === "INDUCTION"; });
+    var chutes = list.filter(function (n) { return n.type === "CHUTE"; });
+
+    chutes.forEach(function (c) {
+      if (!validCapacity(c.capacity)) {
+        issues.push({ level: "error", nodeId: c.id, message: c.id + " (chute) needs a capacity greater than 0." });
+      }
+    });
+
+    var byZone = {};
+    function bucket(z) { return byZone[z] || (byZone[z] = { i: [], c: [] }); }
+    inductions.forEach(function (n) { var z = zoneOf(n); if (z) bucket(z).i.push(n.id); });
+    chutes.forEach(function (n) { var z = zoneOf(n); if (z) bucket(z).c.push(n.id); });
+
+    Object.keys(byZone).forEach(function (z) {
+      var b = byZone[z];
+      if (b.i.length && b.c.length) {
+        issues.push({ level: "error", nodeId: b.c[0],
+          message: "Zone " + z + " can't hold both induction stations (" + b.i.join(", ") + ") and chutes (" + b.c.join(", ") + ")." });
+      }
+    });
+
+    if (workers.mode === "zone") {
+      inductions.concat(chutes).forEach(function (n) {
+        if (!zoneOf(n)) {
+          issues.push({ level: "error", nodeId: n.id,
+            message: n.id + " (" + NODE_TYPES[n.type].label.toLowerCase() + ") needs a zone \u2014 workers are assigned per zone." });
+        }
+      });
+      var perZone = workers.perZone || {};
+      Object.keys(byZone).forEach(function (z) {
+        var b = byZone[z], zc = perZone[z] || {};
+        if (b.i.length && !validCount(zc.inductionCount)) {
+          issues.push({ level: "error", nodeId: b.i[0], message: "Zone " + z + ": enter the number of induction workers (a whole number, at least 1)." });
+        }
+        if (b.c.length && !validCount(zc.chuteCount)) {
+          issues.push({ level: "error", nodeId: b.c[0], message: "Zone " + z + ": enter the number of chute workers (a whole number, at least 1)." });
+        }
+      });
+    }
+    return issues;
+  }
+
+  // Turns a payload (the same shape export produces) into editor state. Returns null if it isn't one.
+  function docFromPayload(data) {
+    if (!data || typeof data !== "object" || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) return null;
+    var nodes = {};
+    data.nodes.forEach(function (n) {
+      if (!n || !n.id || !NODE_TYPES[n.type]) return;
+      var cap = n.capacity === null || n.capacity === undefined || n.capacity === "" ? null : Number(n.capacity);
+      nodes[n.id] = {
+        id: n.id, type: n.type, label: n.label || (NODE_TYPES[n.type].label + " " + n.id),
+        zone: n.zone ? String(n.zone).trim() : "", parentId: n.parentId || null,
+        x: typeof n.x === "number" ? n.x : (n.type === "DIVERTER" ? undefined : 0),
+        y: typeof n.y === "number" ? n.y : (n.type === "DIVERTER" ? undefined : 0),
+        capacity: cap === null || isNaN(cap) ? null : cap
+      };
+    });
+    var edges = data.edges.filter(function (e) { return e && nodes[e.from] && nodes[e.to]; })
+      .map(function (e) { return { id: e.from + "->" + e.to, from: e.from, to: e.to }; });
+    return { nodes: nodes, edges: edges, workers: data.workers ? normalizeWorkers(data.workers) : null };
+  }
+
+  function roundRobinAssign(workerIds, nodeIds) {
+    var assignments = {};
+    if (workerIds.length === 0) {
+      nodeIds.forEach(function (nid) { assignments[nid] = null; });
+      return assignments;
+    }
+    nodeIds.forEach(function (nid, i) { assignments[nid] = workerIds[i % workerIds.length]; });
+    return assignments;
+  }
+
+  function computeAutoAssignments(mode, opts, inductionNodeIds, chuteNodeIds) {
+    var inductionPool = [], chutePool = [], w = 1, i;
+    if (mode === "total") {
+      var total = Math.max(0, opts.total | 0);
+      var nInduction = Math.floor(total / 2);
+      var nChute = total - nInduction;
+      for (i = 0; i < nInduction; i++, w++) inductionPool.push("W" + String(w).padStart(3, "0"));
+      for (i = 0; i < nChute; i++, w++) chutePool.push("W" + String(w).padStart(3, "0"));
+    } else if (mode === "split") {
+      var nI = Math.max(0, opts.inductionCount | 0);
+      var nC = Math.max(0, opts.chuteCount | 0);
+      for (i = 0; i < nI; i++, w++) inductionPool.push("W" + String(w).padStart(3, "0"));
+      for (i = 0; i < nC; i++, w++) chutePool.push("W" + String(w).padStart(3, "0"));
+    }
+    var inductionAssign = roundRobinAssign(inductionPool, inductionNodeIds);
+    var chuteAssign = roundRobinAssign(chutePool, chuteNodeIds);
+    var assignments = {};
+    Object.keys(inductionAssign).forEach(function (k) { assignments[k] = inductionAssign[k]; });
+    Object.keys(chuteAssign).forEach(function (k) { assignments[k] = chuteAssign[k]; });
+    return { inductionPool: inductionPool, chutePool: chutePool, assignments: assignments };
+  }
+
+  // Zone-scoped assignment (mode "zone"): group induction/chute nodes by
+  // their zone string ("" = unzoned, grouped and labeled separately), then
+  // round-robin a per-zone worker pool across only that zone's nodes. Worker
+  // IDs are handed out with one running counter across all zones/roles, so
+  // pools never overlap and the same worker can never end up covering both
+  // an induction node and a chute node.
+  function groupIdsByZone(nodes, ids) {
+    var groups = {};
+    ids.forEach(function (id) {
+      var zone = zoneOf(nodes[id]);
+      if (!groups[zone]) groups[zone] = [];
+      groups[zone].push(id);
+    });
+    return groups;
+  }
+
+  function computeZoneAssignments(nodes, workers, inductionNodeIds, chuteNodeIds) {
+    var inductionGroups = groupIdsByZone(nodes, inductionNodeIds);
+    var chuteGroups = groupIdsByZone(nodes, chuteNodeIds);
+    var zoneSet = {};
+    Object.keys(inductionGroups).forEach(function (z) { zoneSet[z] = true; });
+    Object.keys(chuteGroups).forEach(function (z) { zoneSet[z] = true; });
+    var zones = Object.keys(zoneSet).sort(function (a, b) {
+      if (a === "") return 1;
+      if (b === "") return -1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+
+    var assignments = {}, breakdown = [], counter = 1;
+    function makePool(n) {
+      var arr = [];
+      for (var i = 0; i < n; i++, counter++) arr.push("W" + String(counter).padStart(3, "0"));
+      return arr;
+    }
+    var perZone = workers.perZone || {};
+    zones.forEach(function (zone) {
+      var iIds = inductionGroups[zone] || [];
+      var cIds = chuteGroups[zone] || [];
+      // nodes without a zone get no workers (they're flagged as errors in zone mode)
+      var zc = zone === "" ? {} : (perZone[zone] || {});
+      var iPool = makePool(iIds.length ? toCount(zc.inductionCount) : 0);
+      var cPool = makePool(cIds.length ? toCount(zc.chuteCount) : 0);
+      var iAssign = roundRobinAssign(iPool, iIds);
+      var cAssign = roundRobinAssign(cPool, cIds);
+      Object.keys(iAssign).forEach(function (k) { assignments[k] = iAssign[k]; });
+      Object.keys(cAssign).forEach(function (k) { assignments[k] = cAssign[k]; });
+      breakdown.push({
+        zone: zone === "" ? "(no zone)" : zone, zoneKey: zone,
+        inductionWorkers: iPool.length, inductionNodes: iIds.length,
+        chuteWorkers: cPool.length, chuteNodes: cIds.length
+      });
+    });
+    return { assignments: assignments, breakdown: breakdown };
+  }
+
+  function nodeWidth(node) { return node.type === "SORTER" ? SORTER_W : STD_W; }
+  function sorterDiverters(nodes, sorterId) {
+    return Object.keys(nodes).map(function (k) { return nodes[k]; })
+      .filter(function (n) { return n.parentId === sorterId; });
+  }
+  function nodeHeight(nodes, node) {
+    if (node.type === "SORTER") {
+      var count = sorterDiverters(nodes, node.id).length;
+      return HEADER_H + PAD_TOP + count * CHIP_H + ADD_ROW_H + PAD_BOTTOM;
+    }
+    return STD_H;
+  }
+  function portOut(nodes, node) {
+    if (node.type === "DIVERTER") {
+      var sorter = nodes[node.parentId];
+      if (!sorter) return null;
+      var divs = sorterDiverters(nodes, node.parentId);
+      var idx = divs.findIndex(function (d) { return d.id === node.id; });
+      var y = sorter.y + HEADER_H + PAD_TOP + idx * CHIP_H + CHIP_H / 2;
+      return { x: sorter.x + SORTER_W, y: y };
+    }
+    var w = nodeWidth(node);
+    return { x: node.x + w, y: node.y + STD_H / 2 };
+  }
+  function portIn(nodes, node) {
+    if (node.type === "SORTER") return { x: node.x, y: node.y + HEADER_H / 2 };
+    return { x: node.x, y: node.y + STD_H / 2 };
+  }
+
+  var DEFAULT_DOC = (function () {
+    var nodes = {
+      IS001: { id: "IS001", type: "INDUCTION", x: 40, y: 80, label: "Induction Station IS001", zone: "A", capacity: null, parentId: null },
+      FC001: { id: "FC001", type: "FEEDER", x: 260, y: 80, label: "Feeder Conveyor FC001", zone: "A", capacity: null, parentId: null },
+      BB001: { id: "BB001", type: "BACKBONE", x: 480, y: 80, label: "Backbone Conveyor BB001", zone: "A", capacity: null, parentId: null },
+      SRT001: { id: "SRT001", type: "SORTER", x: 700, y: 40, label: "Sorter SRT001", zone: "E", capacity: null, parentId: null },
+      DV001: { id: "DV001", type: "DIVERTER", label: "Diverter DV001", zone: "E", capacity: null, parentId: "SRT001" },
+      DV002: { id: "DV002", type: "DIVERTER", label: "Diverter DV002", zone: "E", capacity: null, parentId: "SRT001" },
+      CH001: { id: "CH001", type: "CHUTE", x: 990, y: 30, label: "Chute CH001", zone: "E", capacity: 100, parentId: null },
+      CH002: { id: "CH002", type: "CHUTE", x: 990, y: 130, label: "Chute CH002", zone: "E", capacity: 100, parentId: null }
+    };
+    var edges = [
+      { id: "IS001->FC001", from: "IS001", to: "FC001" },
+      { id: "FC001->BB001", from: "FC001", to: "BB001" },
+      { id: "BB001->SRT001", from: "BB001", to: "SRT001" },
+      { id: "DV001->CH001", from: "DV001", to: "CH001" },
+      { id: "DV002->CH002", from: "DV002", to: "CH002" }
+    ];
+    var workers = { mode: "total", total: 2, inductionCount: 1, chuteCount: 1, perZone: {} };
+    return { nodes: nodes, edges: edges, workers: workers };
+  })();
+
+  /* ============================================================
+     STORAGE
+     ============================================================ */
+  var STORAGE_KEY = "yard-designer-doc-v1";
+  function loadDoc() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.nodes && parsed.edges && parsed.workers) return parsed;
+      return null;
+    } catch (e) { return null; }
+  }
+  function saveDoc(doc) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(doc)); } catch (e) { /* ignore quota/availability errors */ }
+  }
+  function loadTheme() {
+    try { return localStorage.getItem("yard-designer-theme") || "auto"; } catch (e) { return "auto"; }
+  }
+  function saveTheme(t) {
+    try { localStorage.setItem("yard-designer-theme", t); } catch (e) { /* ignore */ }
+  }
+
+  function defaultPort() {
+    try { if (/^https?:$/.test(location.protocol) && location.port) return location.port; } catch (e) { /* ignore */ }
+    return "8080";
+  }
+  function loadPort() {
+    try { return localStorage.getItem("yard-designer-port") || defaultPort(); } catch (e) { return defaultPort(); }
+  }
+  function savePort(p) {
+    try { localStorage.setItem("yard-designer-port", String(p)); } catch (e) { /* ignore */ }
+  }
+
+  /* ============================================================
+     SMALL COMPONENTS
+     ============================================================ */
+  function Toast(props) {
+    if (!props.toast) return null;
+    return h("div", { className: "toast " + (props.toast.kind || "") }, props.toast.message);
+  }
+
+  function Palette(props) {
+    return h("div", { className: "rail left" + (props.open ? " open" : "") },
+      h("div", { className: "rail-section" },
+        h("p", { className: "rail-title" }, "Add to canvas"),
+        PALETTE_TYPES.map(function (type, i) {
+          var meta = NODE_TYPES[type];
+          return h("div", {
+            key: type,
+            className: "palette-item",
+            draggable: true,
+            onDragStart: function (e) { e.dataTransfer.setData("text/plain", "new:" + type); },
+            title: "Drag onto the canvas"
+          },
+            h("span", { className: "palette-stage", style: { background: "var(" + meta.colorVar + ")" } }, meta.stage),
+            h("span", { className: "palette-label" }, meta.label)
+          );
+        }),
+        h("div", { className: "palette-hint" },
+          "Diverters live inside a sorter. Place a sorter, then use its own \u201C+ Add diverter\u201D row.")
+      ),
+      h("div", { className: "rail-section" },
+        h("p", { className: "rail-title" }, "How it works"),
+        h("div", { className: "palette-hint" },
+          "Drag a shape onto the canvas. Click a filled port, then an open port on another node, to connect them \u2014 connections only run forward: induction \u2192 feeder \u2192 backbone \u2192 sorter \u2192 diverter \u2192 chute.")
+      )
+    );
+  }
+
+  function NodePorts(props) {
+    var node = props.node, meta = NODE_TYPES[node.type], color = "var(" + meta.colorVar + ")";
+    var kids = [];
+    if (meta.next) {
+      kids.push(h("div", {
+        key: "out",
+        className: "port out" + (props.eligibleOut ? " eligible" : ""),
+        style: { background: color, right: -6, top: STD_H / 2 },
+        onMouseDown: function (e) { e.stopPropagation(); },
+        onClick: function (e) { e.stopPropagation(); props.onStartConnect(node.id); }
+      }));
+    }
+    if (node.type !== "INDUCTION") {
+      kids.push(h("div", {
+        key: "in",
+        className: "port in" + (props.eligibleIn ? " eligible" : ""),
+        style: { borderColor: color, left: -6, top: node.type === "SORTER" ? HEADER_H / 2 : STD_H / 2 },
+        onMouseDown: function (e) { e.stopPropagation(); },
+        onClick: function (e) { e.stopPropagation(); props.onCompleteConnect(node.id); }
+      }));
+    }
+    return kids;
+  }
+
+  function SorterBody(props) {
+    var divs = sorterDiverters(props.nodes, props.node.id);
+    return h("div", { className: "sorter-body" },
+      divs.map(function (d) {
+        return h("div", {
+          key: d.id,
+          className: "diverter-row" + (props.selection && props.selection.type === "node" && props.selection.id === d.id ? " selected" : ""),
+          onClick: function (e) { e.stopPropagation(); props.onSelect({ type: "node", id: d.id }); }
+        },
+          h("span", { className: "diverter-swatch" }),
+          h("span", { className: "diverter-id mono" }, d.id),
+          h("button", {
+            className: "diverter-del",
+            title: "Delete diverter",
+            onClick: function (e) { e.stopPropagation(); props.onDeleteNode(d.id); }
+          }, "\u00D7"),
+          h("div", {
+            className: "port out" + (props.connectFrom && props.connectFrom === d.id ? " eligible" : ""),
+            style: { background: "var(--node-diverter)", right: -6, top: "50%" },
+            onMouseDown: function (e) { e.stopPropagation(); },
+            onClick: function (e) { e.stopPropagation(); props.onStartConnect(d.id); }
+          })
+        );
+      }),
+      h("button", {
+        className: "add-diverter-row",
+        onClick: function (e) { e.stopPropagation(); props.onAddDiverter(props.node.id); }
+      }, "+ Add diverter")
+    );
+  }
+
+  function NodeCard(props) {
+    var node = props.node, meta = NODE_TYPES[node.type];
+    var color = "var(" + meta.colorVar + ")";
+    var w = nodeWidth(node), height = nodeHeight(props.nodes, node);
+    var selected = props.selection && props.selection.type === "node" && props.selection.id === node.id;
+    var eligibleIn = !!(props.connectFrom && canConnect(props.nodes, props.connectFrom, node.id).ok);
+    var style = {
+      left: node.x, top: node.y, width: w, height: height,
+      "--card-color": color
+    };
+    return h("div", {
+      className: "node-card" + (selected ? " selected" : ""),
+      style: style,
+      onClick: function (e) { e.stopPropagation(); props.onSelect({ type: "node", id: node.id }); }
+    },
+      h("div", {
+        className: "node-head",
+        onMouseDown: function (e) { props.onDragStart(node.id, e); }
+      },
+        h("span", { className: "node-dot" }),
+        h("span", { className: "node-id mono" }, node.id),
+        h("span", { className: "node-label" }, node.label)
+      ),
+      node.workerTag ? h("div", { className: "node-worker-tag" }, node.workerTag) : null,
+      node.type === "SORTER" ? h(SorterBody, {
+        node: node, nodes: props.nodes, selection: props.selection,
+        onSelect: props.onSelect, onDeleteNode: props.onDeleteNode,
+        onAddDiverter: props.onAddDiverter, onStartConnect: props.onStartConnect,
+        connectFrom: props.connectFrom
+      }) : null,
+      NodePorts({
+        node: node, eligibleIn: eligibleIn, eligibleOut: false,
+        onStartConnect: props.onStartConnect, onCompleteConnect: props.onCompleteConnect
+      })
+    );
+  }
+
+  function EdgeLayer(props) {
+    var nodes = props.nodes;
+    function pathFor(p1, p2) {
+      var dx = Math.max(40, Math.abs(p2.x - p1.x) / 2);
+      return "M " + p1.x + " " + p1.y + " C " + (p1.x + dx) + " " + p1.y + ", " + (p2.x - dx) + " " + p2.y + ", " + p2.x + " " + p2.y;
+    }
+    var edgeEls = props.edges.map(function (e) {
+      var from = nodes[e.from], to = nodes[e.to];
+      if (!from || !to) return null;
+      var p1 = portOut(nodes, from), p2 = portIn(nodes, to);
+      if (!p1 || !p2) return null;
+      var d = pathFor(p1, p2);
+      var selected = props.selection && props.selection.type === "edge" && props.selection.id === e.id;
+      var color = "var(" + NODE_TYPES[from.type].colorVar + ")";
+      return h("g", { key: e.id },
+        h("path", { d: d, className: "edge-hit", onClick: function (evt) { evt.stopPropagation(); props.onSelectEdge(e.id); } }),
+        h("path", { d: d, className: "edge-path" + (selected ? " selected" : ""), stroke: color })
+      );
+    });
+    var temp = null;
+    if (props.connectFrom && props.mousePos && nodes[props.connectFrom]) {
+      var srcNode = nodes[props.connectFrom];
+      var p1 = portOut(nodes, srcNode);
+      if (p1) temp = h("path", { d: pathFor(p1, props.mousePos), className: "edge-temp" });
+    }
+    return h("svg", { className: "edge-layer", width: WORLD_W, height: WORLD_H }, edgeEls, temp);
+  }
+
+  function Canvas(props) {
+    var viewportRef = useRef(null);
+    var worldRef = useRef(null);
+
+    function worldPointFromEvent(e) {
+      var rect = worldRef.current.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function onDrop(e) {
+      e.preventDefault();
+      var data = e.dataTransfer.getData("text/plain");
+      if (!data || data.indexOf("new:") !== 0) return;
+      var type = data.slice(4);
+      if (!NODE_TYPES[type]) return;
+      var pt = worldPointFromEvent(e);
+      props.onAddNodeAt(type, pt.x, pt.y);
+    }
+
+    function onWorldMouseMove(e) {
+      if (props.connectFrom) props.onMouseMoveWhileConnecting(worldPointFromEvent(e));
+      if (props.dragging) {
+        var pt = worldPointFromEvent(e);
+        props.onDragMove(pt.x - props.dragging.offX, pt.y - props.dragging.offY);
+      }
+    }
+
+    return h("div", { className: "canvas-wrap" },
+      h("div", {
+        className: "canvas-viewport",
+        ref: viewportRef,
+        onMouseMove: onWorldMouseMove,
+        onMouseUp: function () { props.onDragEnd(); },
+        onDragOver: function (e) { e.preventDefault(); },
+        onDrop: onDrop,
+        onClick: function () { props.onCancelConnect(); props.onSelect(null); }
+      },
+        h("div", {
+          className: "canvas-world" + (props.connectFrom ? " connecting" : ""),
+          ref: worldRef,
+          style: { width: WORLD_W, height: WORLD_H }
+        },
+          h(EdgeLayer, {
+            nodes: props.nodes, edges: props.edges, selection: props.selection,
+            connectFrom: props.connectFrom, mousePos: props.mousePos,
+            onSelectEdge: function (id) { props.onSelect({ type: "edge", id: id }); }
+          }),
+          Object.keys(props.nodes).filter(function (id) { return props.nodes[id].parentId === null || props.nodes[id].parentId === undefined; })
+            .map(function (id) {
+              var node = props.nodes[id];
+              return h(NodeCard, {
+                key: id, node: node, nodes: props.nodes, selection: props.selection,
+                connectFrom: props.connectFrom,
+                onSelect: props.onSelect,
+                onDeleteNode: props.onDeleteNode,
+                onAddDiverter: props.onAddDiverter,
+                onStartConnect: props.onStartConnect,
+                onCompleteConnect: props.onCompleteConnect,
+                onDragStart: function (nodeId, e) {
+                  e.stopPropagation();
+                  var pt = worldPointFromEvent(e);
+                  props.onDragStart(nodeId, pt.x - node.x, pt.y - node.y);
+                }
+              });
+            })
+        )
+      )
+    );
+  }
+
+  function Inspector(props) {
+    var tabs = h("div", { className: "tabs" },
+      h("button", { className: "tab-btn" + (props.tab === "selection" ? " active" : ""), onClick: function () { props.setTab("selection"); } }, "Selection"),
+      h("button", { className: "tab-btn" + (props.tab === "workers" ? " active" : ""), onClick: function () { props.setTab("workers"); } }, "Workers")
+    );
+    var body;
+    if (props.tab === "selection") body = h(SelectionPane, props);
+    else body = h(WorkersPane, props);
+    return h("div", { className: "rail right" + (props.open ? " open" : "") }, tabs, body);
+  }
+
+  function SelectionPane(props) {
+    var sel = props.selection;
+    if (!sel) {
+      return h("div", { className: "empty-note" },
+        "Select a node or connection to see its details here. Click a filled port on a node, then an open port on another, to connect them.");
+    }
+    if (sel.type === "edge") {
+      var edge = props.edges.find(function (e) { return e.id === sel.id; });
+      if (!edge) return null;
+      return h("div", { className: "rail-section" },
+        h("p", { className: "rail-title" }, "Connection"),
+        h("div", { className: "field" }, h("label", null, "From"), h("div", { className: "mono" }, edge.from)),
+        h("div", { className: "field" }, h("label", null, "To"), h("div", { className: "mono" }, edge.to)),
+        h("button", { className: "btn danger", onClick: function () { props.onDeleteEdge(edge.id); } }, "Delete connection")
+      );
+    }
+    var node = props.nodes[sel.id];
+    if (!node) return null;
+    var meta = NODE_TYPES[node.type];
+    return h("div", { className: "rail-section" },
+      h("span", { className: "badge", style: { background: "var(" + meta.colorVar + ")" } }, meta.label),
+      h("div", { className: "field", style: { marginTop: 12 } },
+        h("label", null, "ID"), h("div", { className: "mono" }, node.id)),
+      h("div", { className: "field" },
+        h("label", null, "Label"),
+        h("input", {
+          type: "text", value: node.label,
+          onChange: function (e) { props.onUpdateNode(node.id, { label: e.target.value }); }
+        })),
+      h("div", { className: "field-row" },
+        h("div", { className: "field" },
+          h("label", null, "Zone"),
+          h("input", {
+            type: "text", value: node.zone || "", placeholder: "e.g. A",
+            className: (props.workers.mode === "zone" && (node.type === "INDUCTION" || node.type === "CHUTE") && !zoneOf(node)) ? "invalid" : "",
+            onChange: function (e) { props.onUpdateNode(node.id, { zone: e.target.value }); }
+          })),
+        node.type !== "DIVERTER" ? h("div", { className: "field" },
+          h("label", null, node.type === "CHUTE" ? "Capacity (required)" : "Capacity"),
+          h("input", {
+            type: "number", min: node.type === "CHUTE" ? 1 : 0,
+            value: node.capacity === null || node.capacity === undefined ? "" : node.capacity,
+            placeholder: node.type === "CHUTE" ? "required" : "optional",
+            className: (node.type === "CHUTE" && !validCapacity(node.capacity)) ? "invalid" : "",
+            onChange: function (e) { props.onUpdateNode(node.id, { capacity: e.target.value === "" ? null : Number(e.target.value) }); }
+          })) : null
+      ),
+      node.type === "INDUCTION" || node.type === "CHUTE"
+        ? h("p", { className: "field-hint" }, "An induction station and a chute can't share a zone.") : null,
+      node.workerTag ? h("div", { className: "summary-line" }, node.workerTag) : null,
+      h("button", { className: "btn danger", onClick: function () { props.onDeleteNode(node.id); } }, "Delete " + meta.label.toLowerCase())
+    );
+  }
+
+  function WorkersPane(props) {
+    var w = props.workers;
+    var inductionIds = props.inductionNodeIds, chuteIds = props.chuteNodeIds;
+    var nodes = props.nodes;
+    function setMode(mode) { props.onUpdateWorkers({ mode: mode }); }
+
+    var modeControls;
+    if (w.mode === "total") {
+      modeControls = h("div", { className: "field" },
+        h("label", null, "Total workers"),
+        h("input", { type: "number", min: 0, value: w.total, onChange: function (e) { props.onUpdateWorkers({ total: Number(e.target.value) }); } }));
+    } else if (w.mode === "split") {
+      modeControls = h("div", { className: "field-row" },
+        h("div", { className: "field" }, h("label", null, "Induction workers"),
+          h("input", { type: "number", min: 0, value: w.inductionCount, onChange: function (e) { props.onUpdateWorkers({ inductionCount: Number(e.target.value) }); } })),
+        h("div", { className: "field" }, h("label", null, "Chute workers"),
+          h("input", { type: "number", min: 0, value: w.chuteCount, onChange: function (e) { props.onUpdateWorkers({ chuteCount: Number(e.target.value) }); } })));
+    } else {
+      // "zone" mode: a worker count for every zone that has induction stations
+      // or chutes. A zone holds one role or the other, never both.
+      var zoneMap = {};
+      inductionIds.forEach(function (id) { var z = zoneOf(nodes[id]); if (z) (zoneMap[z] = zoneMap[z] || { i: 0, c: 0 }).i++; });
+      chuteIds.forEach(function (id) { var z = zoneOf(nodes[id]); if (z) (zoneMap[z] = zoneMap[z] || { i: 0, c: 0 }).c++; });
+      var zones = Object.keys(zoneMap).sort();
+      var unzoned = inductionIds.concat(chuteIds).filter(function (id) { return !zoneOf(nodes[id]); }).length;
+      var perZoneState = w.perZone || {};
+
+      var unzonedBanner = unzoned > 0 ? h("div", { className: "warn-banner" },
+        unzoned + " induction station" + (unzoned === 1 ? "" : "s") + " / chute" + (unzoned === 1 ? "" : "s") +
+        " ha" + (unzoned === 1 ? "s" : "ve") + " no zone yet. Set one in the Selection tab \u2014 every induction station and chute needs a zone in this mode.") : null;
+
+      var perZoneTable = zones.length > 0 ? h("table", { className: "assign-table", style: { marginBottom: 12 } },
+        h("thead", null, h("tr", null, h("th", null, "Zone"), h("th", null, "Induction workers"), h("th", null, "Chute workers"))),
+        h("tbody", null, zones.map(function (zone) {
+          var info = zoneMap[zone], zc = perZoneState[zone] || {};
+          function setZoneCount(field, value) {
+            var perZone = Object.assign({}, perZoneState);
+            var entry = Object.assign({}, perZone[zone]);
+            if (value === "") delete entry[field]; else entry[field] = Number(value);
+            perZone[zone] = entry;
+            props.onUpdateWorkers({ perZone: perZone });
+          }
+          function cell(field, present) {
+            if (!present) return "\u2014";
+            return h("input", {
+              type: "number", min: 1, step: 1, placeholder: "required",
+              value: zc[field] === undefined || zc[field] === null ? "" : zc[field],
+              className: validCount(zc[field]) ? "" : "invalid",
+              onChange: function (e) { setZoneCount(field, e.target.value); }
+            });
+          }
+          return h("tr", { key: zone },
+            h("td", null, zone),
+            h("td", null, cell("inductionCount", info.i > 0)),
+            h("td", null, cell("chuteCount", info.c > 0))
+          );
+        }))
+      ) : h("div", { className: "empty-note", style: { padding: "0 0 12px" } },
+        "Give your induction stations and chutes a zone (Selection tab) to enter worker counts here.");
+
+      modeControls = h("div", null, unzonedBanner, perZoneTable);
+    }
+
+    var summary = h("div", { className: "summary-line" }, props.autoSummary);
+
+    function tableFor(ids, roleLabel) {
+      if (ids.length === 0) return null;
+      return h("div", { style: { marginBottom: 14 } },
+        h("p", { className: "rail-title" }, roleLabel),
+        h("table", { className: "assign-table" },
+          h("thead", null, h("tr", null, h("th", null, "Node"), h("th", null, "Zone"), h("th", null, "Worker"))),
+          h("tbody", null, ids.map(function (id) {
+            var assigned = props.resolvedAssignments[id];
+            return h("tr", { key: id },
+              h("td", { className: "mono" }, id),
+              h("td", null, nodes[id].zone || "\u2014"),
+              h("td", { className: "mono" }, assigned || "\u2014")
+            );
+          }))
+        ));
+    }
+
+    return h("div", { className: "rail-section" },
+      h("p", { className: "rail-title" }, "Assignment mode"),
+      h("label", { className: "radio-row" },
+        h("input", { type: "radio", checked: w.mode === "total", onChange: function () { setMode("total"); } }),
+        "Total workers, split evenly"),
+      h("label", { className: "radio-row" },
+        h("input", { type: "radio", checked: w.mode === "split", onChange: function () { setMode("split"); } }),
+        "Separate induction / chute counts"),
+      h("label", { className: "radio-row", style: { marginBottom: 12 } },
+        h("input", { type: "radio", checked: w.mode === "zone", onChange: function () { setMode("zone"); } }),
+        "Workers per zone"),
+      modeControls,
+      h("div", { style: { height: 4 } }),
+      summary,
+      tableFor(inductionIds, "Induction stations"),
+      tableFor(chuteIds, "Chutes")
+    );
+  }
+
+  function AskPanel(props) {
+    var _q = useState(""), question = _q[0], setQuestion = _q[1];
+    var _a = useState(null), answer = _a[0], setAnswer = _a[1];
+    var _l = useState(false), loading = _l[0], setLoading = _l[1];
+    var _er = useState(null), error = _er[0], setError = _er[1];
+
+    function ask() {
+      var q = question.trim();
+      if (!q || loading) return;
+      setLoading(true); setError(null); setAnswer(null);
+      fetch(props.apiBase + API_PATH_QUESTION, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json","ngrok-skip-browser-warning": "true"},
+        body: JSON.stringify({ question: q })
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          var a = data && typeof data === "object" ? data.answer : data;
+          if (a === undefined || a === null) throw new Error("no \"answer\" in the response");
+          setAnswer(typeof a === "string" ? a : JSON.stringify(a, null, 2));
+        })
+        .catch(function (err) {
+          setError("Couldn't get an answer (" + (err && err.message ? err.message : "network error") + ").");
+        })
+        .then(function () { setLoading(false); });
+    }
+
+    return h("div", { className: "ask-panel" },
+      h("p", { className: "ask-title" }, "Ask a question"),
+      h("div", { className: "ask-row" },
+        h("textarea", {
+          value: question, rows: 2, placeholder: "Type a question and press Ask (Ctrl/Cmd + Enter)",
+          onChange: function (e) { setQuestion(e.target.value); },
+          onKeyDown: function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ask(); } }
+        }),
+        h("button", { className: "btn primary", disabled: loading || !question.trim(), onClick: ask }, loading ? "Asking\u2026" : "Ask")
+      ),
+      loading ? h("div", { className: "ask-answer pending" }, "Waiting for an answer\u2026") : null,
+      error ? h("div", { className: "ask-answer error" }, error) : null,
+      answer !== null ? h("div", { className: "ask-answer" }, answer) : null
+    );
+  }
+
+  function StatusBar(props) {
+    var counts = {};
+    Object.keys(props.nodes).forEach(function (id) {
+      var t = props.nodes[id].type;
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    var errs = props.issues.filter(function (i) { return i.level === "error"; }).length;
+    var warns = props.issues.filter(function (i) { return i.level === "warning"; }).length;
+    return h("div", { className: "status-bar" },
+      h("button", { className: "btn subtle icon mobile-toggle", onClick: props.onTogglePalette }, "\u2630"),
+      Object.keys(NODE_TYPES).map(function (t) {
+        return h("span", { key: t, className: "status-count mono" }, (counts[t] || 0) + " " + NODE_TYPES[t].prefix);
+      }),
+      h("span", { className: "status-spacer" }),
+      h("button", {
+        className: "issue-chip " + (errs > 0 ? "err" : warns > 0 ? "warn" : "ok"),
+        onClick: props.onToggleIssues
+      }, errs === 0 && warns === 0 ? "No issues found" : (errs + " errors, " + warns + " warnings")),
+      h("button", { className: "btn subtle icon mobile-toggle", onClick: props.onToggleInspector }, "\u2699")
+    );
+  }
+
+  function IssuesPanel(props) {
+    if (!props.open) return null;
+    if (props.issues.length === 0) {
+      return h("div", { className: "issues-panel" }, h("div", { className: "issue-row" }, "No issues found."));
+    }
+    return h("div", { className: "issues-panel" },
+      props.issues.map(function (issue, i) {
+        return h("div", {
+          key: i, className: "issue-row",
+          onClick: function () { props.onSelect({ type: "node", id: issue.nodeId }); }
+        },
+          h("span", { className: "issue-icon " + issue.level }, issue.level === "error" ? "\u2715" : "\u26A0"),
+          h("span", null, issue.message)
+        );
+      })
+    );
+  }
+
+  /* ============================================================
+     APP
+     ============================================================ */
+  function App() {
+    var restored = loadDoc();
+    var initial = restored || DEFAULT_DOC;
+    var _n = useState(initial.nodes), nodes = _n[0], setNodes = _n[1];
+    var _e = useState(initial.edges), edges = _e[0], setEdges = _e[1];
+    var _w = useState(function () { return normalizeWorkers(initial.workers); }), workers = _w[0], setWorkers = _w[1];
+    var _sel = useState(null), selection = _sel[0], setSelection = _sel[1];
+    var _cf = useState(null), connectFrom = _cf[0], setConnectFrom = _cf[1];
+    var _mp = useState(null), mousePos = _mp[0], setMousePos = _mp[1];
+    var _drag = useState(null), dragging = _drag[0], setDragging = _drag[1];
+    var _toast = useState(null), toast = _toast[0], setToast = _toast[1];
+    var _tab = useState("selection"), tab = _tab[0], setTab = _tab[1];
+    var _issuesOpen = useState(false), issuesOpen = _issuesOpen[0], setIssuesOpen = _issuesOpen[1];
+    var _theme = useState(loadTheme), theme = _theme[0], setTheme = _theme[1];
+    var _port = useState(loadPort), port = _port[0], setPortState = _port[1];
+    var _reg = useState(false), registering = _reg[0], setRegistering = _reg[1];
+    var apiBase = "https://tonsorial-preppily-jamika.ngrok-free.dev";
+    function setPort(v) { setPortState(v); savePort(v); }
+    var _panels = useState(function () {
+      var wide = typeof window !== "undefined" && window.innerWidth > 900;
+      return { palette: wide, inspector: wide };
+    }), panels = _panels[0], setPanels = _panels[1];
+    var fileInputRef = useRef(null);
+    var toastTimer = useRef(null);
+
+    useEffect(function () {
+      document.documentElement.setAttribute("data-theme", theme === "auto" ? "" : theme);
+      saveTheme(theme);
+    }, [theme]);
+
+    useEffect(function () { saveDoc({ nodes: nodes, edges: edges, workers: workers }); }, [nodes, edges, workers]);
+
+    // On open: fetch the previously registered design (if any) and show it on the canvas.
+    useEffect(function () {
+      var cancelled = false;
+      fetch(apiBase + API_PATH_DESIGN, { headers: { "Accept": "application/json", "ngrok-skip-browser-warning": "true" } })
+        .then(function (res) {
+          if (res.status === 404 || res.status === 204) return "";
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.text();
+        })
+        .then(function (text) {
+          if (cancelled || !text || !text.trim()) return;
+          var doc = docFromPayload(JSON.parse(text));   // JSON null -> no design registered yet
+          if (doc) { applyDoc(doc); showToast("Loaded your registered design.", "ok"); }
+        })
+        .catch(function (err) {
+          if (!cancelled) showToast("Couldn't load the registered design (" + (err && err.message ? err.message : "network error") + ").", "error");
+        });
+      return function () { cancelled = true; };
+    }, []);
+
+    function showToast(message, kind) {
+      setToast({ message: message, kind: kind || "" });
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(function () { setToast(null); }, 3200);
+    }
+
+    function clampPos(x, y, w, hh) {
+      return { x: Math.max(0, Math.min(WORLD_W - w, x)), y: Math.max(0, Math.min(WORLD_H - hh, y)) };
+    }
+
+    function addNodeAt(type, x, y) {
+      setNodes(function (prev) {
+        var id = nextIdFromNodes(type, prev);
+        var w = type === "SORTER" ? SORTER_W : STD_W;
+        var pos = clampPos(x - w / 2, y - STD_H / 2, w, STD_H);
+        var next = {};
+        Object.keys(prev).forEach(function (k) { next[k] = prev[k]; });
+        next[id] = { id: id, type: type, x: pos.x, y: pos.y, label: NODE_TYPES[type].label + " " + id, zone: "", capacity: null, parentId: null };
+        return next;
+      });
+      setSelection(null);
+    }
+
+    function addDiverter(sorterId) {
+      setNodes(function (prev) {
+        var id = nextIdFromNodes("DIVERTER", prev);
+        var next = {};
+        Object.keys(prev).forEach(function (k) { next[k] = prev[k]; });
+        next[id] = { id: id, type: "DIVERTER", label: "Diverter " + id, zone: "", capacity: null, parentId: sorterId };
+        return next;
+      });
+    }
+
+    function updateNode(id, patch) {
+      setNodes(function (prev) {
+        if (!prev[id]) return prev;
+        var next = {};
+        Object.keys(prev).forEach(function (k) { next[k] = prev[k]; });
+        next[id] = Object.assign({}, prev[id], patch);
+        return next;
+      });
+    }
+
+    function deleteNode(id) {
+      var result = removeNode(nodes, edges, id);
+      setNodes(result.nodes);
+      setEdges(result.edges);
+      if (selection && selection.id === id) setSelection(null);
+    }
+
+    function deleteEdge(id) {
+      setEdges(edges.filter(function (e) { return e.id !== id; }));
+      if (selection && selection.type === "edge" && selection.id === id) setSelection(null);
+    }
+
+    function deleteSelected() {
+      if (!selection) return;
+      if (selection.type === "node") deleteNode(selection.id);
+      else deleteEdge(selection.id);
+    }
+
+    function startConnect(id) { setConnectFrom(id); }
+    function completeConnect(toId) {
+      if (!connectFrom) return;
+      var check = canConnect(nodes, connectFrom, toId);
+      if (!check.ok) { showToast(check.reason, "error"); setConnectFrom(null); return; }
+      setEdges(function (prev) { return addEdge(prev, connectFrom, toId); });
+      setConnectFrom(null);
+    }
+    function cancelConnect() { setConnectFrom(null); }
+
+    function dragStart(id, offX, offY) { setDragging({ id: id, offX: offX, offY: offY }); }
+    function dragMove(x, y) {
+      if (!dragging) return;
+      var node = nodes[dragging.id];
+      if (!node) return;
+      var w = nodeWidth(node), hh = nodeHeight(nodes, node);
+      var pos = clampPos(x, y, w, hh);
+      updateNode(dragging.id, { x: pos.x, y: pos.y });
+    }
+    function dragEnd() { setDragging(null); }
+
+    useEffect(function () {
+      function onKey(e) {
+        var tag = document.activeElement && document.activeElement.tagName;
+        var typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+        if (e.key === "Escape") { setConnectFrom(null); setSelection(null); }
+        if (!typing && (e.key === "Delete" || e.key === "Backspace") && selection) {
+          e.preventDefault();
+          deleteSelected();
+        }
+      }
+      window.addEventListener("keydown", onKey);
+      return function () { window.removeEventListener("keydown", onKey); };
+    });
+
+    var issues = useMemo(function () { return validateGraph(nodes, edges).concat(validateRules(nodes, workers)); }, [nodes, edges, workers]);
+
+    var inductionNodeIds = useMemo(function () {
+      return Object.keys(nodes).filter(function (id) { return nodes[id].type === "INDUCTION"; });
+    }, [nodes]);
+    var chuteNodeIds = useMemo(function () {
+      return Object.keys(nodes).filter(function (id) { return nodes[id].type === "CHUTE"; });
+    }, [nodes]);
+
+    var autoResult = useMemo(function () {
+      if (workers.mode === "zone") return null;
+      return computeAutoAssignments(workers.mode, workers, inductionNodeIds, chuteNodeIds);
+    }, [workers, inductionNodeIds, chuteNodeIds]);
+
+    var zoneResult = useMemo(function () {
+      if (workers.mode !== "zone") return null;
+      return computeZoneAssignments(nodes, workers, inductionNodeIds, chuteNodeIds);
+    }, [workers, nodes, inductionNodeIds, chuteNodeIds]);
+
+    var resolvedAssignments = useMemo(function () {
+      if (workers.mode === "zone") return zoneResult ? zoneResult.assignments : {};
+      return autoResult ? autoResult.assignments : {};
+    }, [workers, autoResult, zoneResult]);
+
+    var autoSummary = useMemo(function () {
+      if (workers.mode === "zone") {
+        if (!zoneResult || zoneResult.breakdown.length === 0) return "No induction stations or chutes to staff yet.";
+        return zoneResult.breakdown.map(function (b) {
+          var parts = [];
+          if (b.inductionNodes > 0) parts.push(b.inductionWorkers + " worker" + (b.inductionWorkers === 1 ? "" : "s") +
+            " covering " + b.inductionNodes + " induction station" + (b.inductionNodes === 1 ? "" : "s"));
+          if (b.chuteNodes > 0) parts.push(b.chuteWorkers + " worker" + (b.chuteWorkers === 1 ? "" : "s") +
+            " covering " + b.chuteNodes + " chute" + (b.chuteNodes === 1 ? "" : "s"));
+          return "Zone " + b.zone + ": " + parts.join(", ") + ".";
+        }).join(" ");
+      }
+      if (!autoResult) return "";
+      var iw = autoResult.inductionPool.length, cw = autoResult.chutePool.length;
+      var iN = inductionNodeIds.length, cN = chuteNodeIds.length;
+      var parts = [];
+      parts.push(iw + " worker" + (iw === 1 ? "" : "s") + " cover" + (iw === 1 ? "s" : "") + " " + iN + " induction station" + (iN === 1 ? "" : "s") + (iw > 0 && iN > iw ? " (round-robin coverage)" : ""));
+      parts.push(cw + " worker" + (cw === 1 ? "" : "s") + " cover" + (cw === 1 ? "s" : "") + " " + cN + " chute" + (cN === 1 ? "" : "s") + (cw > 0 && cN > cw ? " (round-robin coverage)" : ""));
+      return parts.join(". ") + ".";
+    }, [workers, autoResult, zoneResult, inductionNodeIds, chuteNodeIds]);
+
+    // annotate nodes with a live worker tag for canvas display (derived, not persisted)
+    var nodesWithTags = useMemo(function () {
+      var next = {};
+      Object.keys(nodes).forEach(function (id) {
+        var n = nodes[id];
+        if (n.type === "INDUCTION" || n.type === "CHUTE") {
+          var wid = resolvedAssignments[id];
+          next[id] = Object.assign({}, n, { workerTag: wid ? ("Worked by " + wid) : "Unassigned" });
+        } else {
+          next[id] = n;
+        }
+      });
+      return next;
+    }, [nodes, resolvedAssignments]);
+
+    function updateWorkers(patch) { setWorkers(function (prev) { return Object.assign({}, prev, patch); }); }
+
+    function loadExample() {
+      setNodes(DEFAULT_DOC.nodes); setEdges(DEFAULT_DOC.edges); setWorkers(DEFAULT_DOC.workers);
+      setSelection(null); showToast("Example loaded.", "ok");
+    }
+    function clearCanvas() {
+      setNodes({}); setEdges([]); setSelection(null); showToast("Canvas cleared.", "");
+    }
+
+    function buildExportPayload() {
+      return {
+        format: "parcel-yard-config",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        nodes: Object.keys(nodes).map(function (id) {
+          var n = nodes[id];
+          return { id: n.id, type: n.type, label: n.label, zone: n.zone ? String(n.zone).trim() || null : null, parentId: n.parentId || null,
+            x: n.x === undefined ? null : n.x, y: n.y === undefined ? null : n.y,
+            capacity: n.capacity === undefined ? null : n.capacity };
+        }),
+        edges: edges.map(function (e) { return { from: e.from, to: e.to }; }),
+        workers: cleanWorkers(workers, nodes)
+      };
+    }
+
+    // Export / Register are blocked while any error-level issue exists.
+    function guardErrors(actionLabel) {
+      var errs = issues.filter(function (i) { return i.level === "error"; });
+      if (errs.length === 0) return true;
+      setIssuesOpen(true);
+      showToast("Fix " + errs.length + " error" + (errs.length === 1 ? "" : "s") + " before " + actionLabel + " \u2014 see the issue list.", "error");
+      return false;
+    }
+
+    function applyDoc(doc) {
+      setNodes(doc.nodes); setEdges(doc.edges);
+      if (doc.workers) setWorkers(doc.workers);
+      setSelection(null);
+    }
+
+    function handleRegister() {
+      if (registering || !guardErrors("registering")) return;
+      setRegistering(true);
+      fetch(apiBase + API_PATH_DESIGN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json",  "ngrok-skip-browser-warning": "true" },
+        body: JSON.stringify(buildExportPayload())
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          showToast("Design registered.", "ok");
+        })
+        .catch(function (err) {
+          showToast("Couldn't register the design (" + (err && err.message ? err.message : "network error") + ").", "error");
+        })
+        .then(function () { setRegistering(false); });
+    }
+
+    function handleExport() {
+      if (!guardErrors("exporting")) return;
+      var json = JSON.stringify(buildExportPayload(), null, 2);
+      (window.claude && window.claude.use ? window.claude.use("downloads") : Promise.resolve(null))
+        .then(function (downloads) {
+          if (!downloads) {
+            console.log(json);
+            showToast("Downloads aren't available here \u2014 logged the JSON to the browser console instead.", "error");
+            return;
+          }
+          return downloads.save({ filename: "parcel-yard-config.json", data: json })
+            .then(function (res) { showToast(res.status === "saved" ? "Config saved." : "Config delivered.", "ok"); });
+        })
+        .catch(function (err) {
+          var code = err && err.code;
+          if (code === "declined") return;
+          showToast("Couldn't save the file (" + (code || "unknown error") + ").", "error");
+        });
+    }
+
+    function handleImportFile(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var data = JSON.parse(String(reader.result));
+          if (data.format !== "parcel-yard-config" || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
+            showToast("That file doesn't look like a Yard Designer config.", "error");
+            return;
+          }
+          var doc = docFromPayload(data);
+          if (!doc) { showToast("That file doesn't have any nodes or edges.", "error"); return; }
+          applyDoc(doc);
+          showToast("Config imported.", "ok");
+        } catch (err) {
+          showToast("Couldn't read that file as JSON.", "error");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    }
+
+    return h("div", { style: { height: "100%", display: "flex", flexDirection: "column" } },
+      h("header", { className: "app-header" },
+        h("div", { className: "brand" },
+          h("span", { style: { fontSize: 18 } }, "\uD83D\uDCE6"),
+          h("span", { className: "brand-title" }, "Yard Designer"),
+          h("span", { className: "brand-sub" }, "sketch a sortation layout, wire it up, staff it")
+        ),
+        h("span", { className: "header-spacer" }),
+        h("button", { className: "btn subtle", onClick: loadExample }, "Load example"),
+        h("button", { className: "btn subtle", onClick: clearCanvas }, "Clear"),
+        h("button", { className: "btn subtle", onClick: function () { fileInputRef.current.click(); } }, "Import"),
+        h("input", { ref: fileInputRef, type: "file", accept: "application/json", className: "file-input", onChange: handleImportFile }),
+        h("button", { className: "btn", onClick: handleExport }, "Export config"),
+        h("label", { className: "port-field", title: "Port of the local API server" }, "localhost:",
+          h("input", { type: "number", min: 1, max: 65535, value: port, onChange: function (e) { setPort(e.target.value); } })),
+        h("button", { className: "btn primary", disabled: registering, onClick: handleRegister }, registering ? "Registering\u2026" : "Register"),
+        h("button", {
+          className: "btn subtle icon", title: "Theme: " + theme,
+          onClick: function () { setTheme(theme === "auto" ? "light" : theme === "light" ? "dark" : "auto"); }
+        }, theme === "auto" ? "\u25D0" : theme === "light" ? "\u2600" : "\u25CF")
+      ),
+      h("div", { className: "app-body" },
+        h(Palette, { open: panels.palette }),
+        h("div", { className: "center-col" },
+        h(Canvas, {
+          nodes: nodesWithTags, edges: edges, selection: selection,
+          connectFrom: connectFrom, mousePos: mousePos,
+          onAddNodeAt: addNodeAt,
+          onSelect: setSelection,
+          onDeleteNode: deleteNode,
+          onAddDiverter: addDiverter,
+          onStartConnect: startConnect,
+          onCompleteConnect: completeConnect,
+          onCancelConnect: cancelConnect,
+          onDragStart: dragStart,
+          onDragMove: dragMove,
+          onDragEnd: dragEnd,
+          dragging: dragging,
+          onMouseMoveWhileConnecting: setMousePos
+        }),
+        h(AskPanel, { apiBase: apiBase })
+        ),
+        h(Inspector, {
+          open: panels.inspector, tab: tab, setTab: setTab,
+          selection: selection, nodes: nodes, edges: edges,
+          onUpdateNode: updateNode, onDeleteNode: deleteNode, onDeleteEdge: deleteEdge,
+          workers: workers, onUpdateWorkers: updateWorkers,
+          inductionNodeIds: inductionNodeIds, chuteNodeIds: chuteNodeIds,
+          resolvedAssignments: resolvedAssignments, autoSummary: autoSummary
+        })
+      ),
+      h(StatusBar, {
+        nodes: nodes, issues: issues,
+        onToggleIssues: function () { setIssuesOpen(!issuesOpen); },
+        onTogglePalette: function () { setPanels(Object.assign({}, panels, { palette: !panels.palette })); },
+        onToggleInspector: function () { setPanels(Object.assign({}, panels, { inspector: !panels.inspector })); }
+      }),
+      h(IssuesPanel, { open: issuesOpen, issues: issues, onSelect: setSelection }),
+      h(Toast, { toast: toast })
+    );
+  }
+
+  var root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(h(App));
+})();
+</script>
+</body>
+</html>
